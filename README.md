@@ -20,6 +20,8 @@ A free, mobile-friendly clue game built with plain HTML, CSS, and JavaScript. It
 14. Polaroid photo mission
 15. Confetti congratulations screen + host final-prize instruction
 
+Correct-answer screens now pause on a **Next** button so players can read the acknowledgement or destination instructions before moving on. The word search has interactive highlighting and does not display a word bank.
+
 ## Files to upload to GitHub Pages
 
 Upload these files/folders to the root of your GitHub repository:
