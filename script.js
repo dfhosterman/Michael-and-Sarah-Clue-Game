@@ -6,7 +6,7 @@
 
 const GAME = {
   title: "Michael & Sarah's Clue Quest",
-  storageKey: "michaelSarahClueQuestV3",
+  storageKey: "michaelSarahClueQuestV4",
   stages: [
     {
       id: "welcome",
@@ -286,44 +286,32 @@ Next clue unlocked.`
 
 A memory mission is hidden in the grid below.
 
-Find the hidden words:
+This time, there is no word bank.
 
-CAMERA
-FLASH
-FRAME
-SMILE
-PRINT
-MEMORY
-PHOTO
-SNAPSHOT
-POLAROID
-BOBKILDEE
-PARK
+Look for the name of the place. Words may go forward, backward, up, down, or diagonal. One important name is hidden as one unbroken word.
 
-Words may go forward, backward, up, down, or diagonal.
-
-When you find the place connected to the mission, type the full destination.`,
+Highlight anything you find in the grid, then type the full destination.`,
       wordSearch: {
         title: "Advanced Word Search",
         grid: [
-          "LSGQDEJEYDTZIRWZ",
-          "TEJDXICVKPRDLNKT",
-          "UGRPOQOYIBZRACXM",
-          "WZVUATPRKHXKWCGS",
-          "HHZEZROOACCKQPDJ",
-          "RJWDRKRMGLZTRSJO",
-          "CTZMKSHEJFOGFBTV",
-          "IPCCTVYMEEEPBCWR",
-          "VMWNQIQZECHGVSNS",
-          "IOIPVUEDWAZLCKTK",
-          "DRPSPMLUKMGHAXIR",
-          "PDWHAIHLZEFKNBDA",
-          "ZEORKWHBSRURTVCP",
-          "ATFBELIMSADUGTSD",
-          "OMOCLSNAAPSHOTDBT",
-          "ABGFWDHSALFPGXZB"
+          "KEMEMORYMUBCRDLS",
+          "BQGBCNNCHCPARKRN",
+          "CAMERABSDHUUSBSS",
+          "MFLASHBHBREJNERD",
+          "SJRVSNAPSHOTFDSS",
+          "UGLDRWCSBPTGPVRN",
+          "YKOSOLJHRZFWYHCS",
+          "JQPKXOJIETCDQNFP",
+          "YKEPNBNEDVCYRSZH",
+          "KKWLTTDPSIZOCCIO",
+          "SMILELPWVCOBXWJT",
+          "USVOIJWMVLAROLFO",
+          "TDPKBGYJEXHMAMPC",
+          "FOBMRIFRAMEENLRI",
+          "WONLVMHECFEHVHOA",
+          "BPSFIJAENRLTSKEP"
         ],
-        words: ["CAMERA", "FLASH", "FRAME", "SMILE", "PRINT", "MEMORY", "PHOTO", "SNAPSHOT", "POLAROID", "BOBKILDEE", "PARK"]
+        hiddenWords: ["BOBKILDEE", "PARK", "POLAROID", "PHOTO", "FRAME", "PRINT", "MEMORY", "CAMERA", "FLASH", "SNAPSHOT"]
       },
       answers: [
         "bob kildee park",
@@ -403,7 +391,8 @@ function defaultState() {
   return {
     index: 0,
     answers: {},
-    finalShown: false
+    finalShown: false,
+    pendingSuccess: null
   };
 }
 
@@ -494,36 +483,111 @@ function addWordSearch(wordSearch) {
   title.textContent = wordSearch.title || "Word Search";
   card.appendChild(title);
 
+  const directions = document.createElement("p");
+  directions.className = "word-search-directions";
+  directions.textContent = "Drag across letters to highlight words. Tap individual letters if that is easier.";
+  card.appendChild(directions);
+
   const scroll = document.createElement("div");
   scroll.className = "word-search-scroll";
 
   const table = document.createElement("table");
-  table.className = "word-search-grid";
-  table.setAttribute("aria-label", "Word search grid");
+  table.className = "word-search-grid interactive";
+  table.setAttribute("aria-label", "Interactive word search grid");
 
-  wordSearch.grid.forEach((row) => {
+  wordSearch.grid.forEach((row, rowIndex) => {
     const tr = document.createElement("tr");
-    row.split("").forEach((letter) => {
+    row.split("").forEach((letter, columnIndex) => {
       const td = document.createElement("td");
       td.textContent = letter;
+      td.dataset.row = String(rowIndex);
+      td.dataset.col = String(columnIndex);
+      td.setAttribute("role", "button");
+      td.setAttribute("aria-label", `Letter ${letter}, row ${rowIndex + 1}, column ${columnIndex + 1}`);
       tr.appendChild(td);
     });
     table.appendChild(tr);
   });
 
+  let isSelecting = false;
+  let touchedDuringDrag = new Set();
+
+  function keyForCell(cell) {
+    return `${cell.dataset.row}-${cell.dataset.col}`;
+  }
+
+  function selectCell(cell) {
+    if (!cell || !cell.matches("td")) return;
+    const key = keyForCell(cell);
+    if (touchedDuringDrag.has(key)) return;
+    cell.classList.add("selected");
+    touchedDuringDrag.add(key);
+  }
+
+  function cellFromPointer(event) {
+    const target = document.elementFromPoint(event.clientX, event.clientY);
+    return target && target.closest(".word-search-grid td");
+  }
+
+  table.addEventListener("pointerdown", (event) => {
+    const cell = event.target.closest("td");
+    if (!cell) return;
+    event.preventDefault();
+    isSelecting = true;
+    touchedDuringDrag = new Set();
+    selectCell(cell);
+    table.setPointerCapture?.(event.pointerId);
+  });
+
+  table.addEventListener("pointermove", (event) => {
+    if (!isSelecting) return;
+    event.preventDefault();
+    selectCell(cellFromPointer(event));
+  });
+
+  function stopSelecting(event) {
+    if (!isSelecting) return;
+    isSelecting = false;
+    try { table.releasePointerCapture?.(event.pointerId); } catch (error) { /* ignore */ }
+  }
+
+  table.addEventListener("pointerup", stopSelecting);
+  table.addEventListener("pointercancel", stopSelecting);
+  table.addEventListener("pointerleave", stopSelecting);
+
   scroll.appendChild(table);
   card.appendChild(scroll);
 
-  const list = document.createElement("ul");
-  list.className = "word-bank";
-  wordSearch.words.forEach((word) => {
-    const li = document.createElement("li");
-    li.textContent = word;
-    list.appendChild(li);
+  const controls = document.createElement("div");
+  controls.className = "word-search-controls";
+
+  const clearButton = document.createElement("button");
+  clearButton.type = "button";
+  clearButton.className = "secondary-button compact";
+  clearButton.textContent = "Clear Highlights";
+  clearButton.addEventListener("click", () => {
+    table.querySelectorAll("td.selected").forEach((cell) => cell.classList.remove("selected"));
   });
-  card.appendChild(list);
+
+  controls.appendChild(clearButton);
+  card.appendChild(controls);
 
   chatWindow.appendChild(card);
+  scrollChatToBottom();
+}
+
+function addNextButton(label = "Next") {
+  const wrapper = document.createElement("div");
+  wrapper.className = "next-step-card";
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "certificate-button next-button";
+  button.textContent = label;
+  button.addEventListener("click", advanceAfterSuccess, { once: true });
+
+  wrapper.appendChild(button);
+  chatWindow.appendChild(wrapper);
   scrollChatToBottom();
 }
 
@@ -558,6 +622,15 @@ function renderCurrentStage() {
   addLockerImage(stage.image);
   addWordSearch(stage.wordSearch);
 
+  if (state.pendingSuccess) {
+    addMessage(state.pendingSuccess.message, state.pendingSuccess.skipped ? "system" : "game", state.pendingSuccess.skipped ? "" : "success");
+    addNextButton(state.pendingSuccess.nextLabel || "Next");
+    answerForm.classList.add("hidden");
+    hintButton.classList.add("hidden");
+    skipButton.classList.add("hidden");
+    return;
+  }
+
   answerForm.classList.remove("hidden");
   hintButton.classList.remove("hidden");
   skipButton.classList.remove("hidden");
@@ -584,22 +657,41 @@ function completeStage(userAnswer, { skipped = false } = {}) {
     ? `Host skip used. Moving past: ${stage.label || stage.id}`
     : getSuccessMessage(stage, userAnswer);
 
-  addMessage(success, skipped ? "system" : "game", skipped ? "" : "success");
+  state.pendingSuccess = {
+    message: success,
+    skipped,
+    nextIndex: state.index + 1,
+    nextLabel: state.index + 1 >= GAME.stages.length ? "Show Congratulations" : "Next"
+  };
 
-  state.index += 1;
+  addMessage(success, skipped ? "system" : "game", skipped ? "" : "success");
+  addNextButton(state.pendingSuccess.nextLabel);
+
+  answerForm.classList.add("hidden");
+  hintButton.classList.add("hidden");
+  skipButton.classList.add("hidden");
+
+  saveState();
+  updateProgress();
+}
+
+function advanceAfterSuccess() {
+  if (!state.pendingSuccess) return;
+
+  state.index = state.pendingSuccess.nextIndex;
+  state.pendingSuccess = null;
+
   if (state.index >= GAME.stages.length) {
     state.finalShown = true;
   }
-  saveState();
-  updateProgress();
 
-  setTimeout(() => {
-    if (state.finalShown) {
-      renderFinalScreen();
-    } else {
-      renderCurrentStage();
-    }
-  }, skipped ? 450 : 950);
+  saveState();
+
+  if (state.finalShown) {
+    renderFinalScreen();
+  } else {
+    renderCurrentStage();
+  }
 }
 
 answerForm.addEventListener("submit", (event) => {
