@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#7d3f8c" />
+  <title>Michael & Sarah's Clue Quest</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="confettiCanvas" class="confetti-canvas" aria-hidden="true"></canvas>
+
+  <main class="app-shell">
+    <section class="phone-card" aria-label="Michael and Sarah's Clue Quest game">
+      <header class="game-header">
+        <div>
+          <p class="eyebrow">Mobile clue game</p>
+          <h1 id="gameTitle">Michael & Sarah's Clue Quest</h1>
+        </div>
+        <button id="resetButton" class="ghost-button" type="button">Reset</button>
+      </header>
+
+      <div class="progress-wrap" aria-label="Game progress">
+        <div class="progress-text">
+          <span id="stepLabel">Welcome</span>
+          <span id="percentLabel">0%</span>
+        </div>
+        <div class="progress-bar" aria-hidden="true">
+          <div id="progressFill" class="progress-fill"></div>
+        </div>
+      </div>
+
+      <section id="chatWindow" class="chat-window" aria-live="polite"></section>
+
+      <form id="answerForm" class="answer-form">
+        <input
+          id="answerInput"
+          type="text"
+          autocomplete="off"
+          placeholder="Type START..."
+          aria-label="Answer"
+        />
+        <button type="submit">Send</button>
+      </form>
+
+      <div class="action-row">
+        <button id="hintButton" class="secondary-button" type="button">Get hint</button>
+        <button id="skipButton" class="secondary-button danger" type="button">Host skip</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
