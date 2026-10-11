@@ -102,7 +102,7 @@ Once you’re ready, type:
 
 GEAR SECURED`,
       image: {
-        src: "assets/locker-code.svg",
+        src: "assets/locker-code.jpg",
         alt: "Find host for code",
         caption: "Find host for code"
       },
